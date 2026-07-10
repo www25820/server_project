@@ -5,7 +5,8 @@
 ## 功能
 
 - 服务器监听 `127.0.0.1:8080`，接受客户端连接
-- 客户端连接到服务器
+- 客户端发送消息 → 服务器接收并回复
+- `SO_REUSEADDR` 端口重用，重启无需等待
 
 ## 环境要求
 
@@ -19,10 +20,10 @@
 
 ```bash
 # 编译服务器
-g++ server.cpp -o server.exe -lws2_32 -Wall -Wextra
+g++ server.cpp -o server.exe -lws2_32 -Wall -Wextra -finput-charset=UTF-8 -fexec-charset=GBK
 
 # 编译客户端
-g++ client.cpp -o client.exe -lws2_32 -Wall -Wextra
+g++ client.cpp -o client.exe -lws2_32 -Wall -Wextra -finput-charset=UTF-8 -fexec-charset=GBK
 ```
 
 ### 使用 VS Code
@@ -53,7 +54,7 @@ server_project/
 ## 学习路线
 
 - [x] 基本的 TCP 连接（server ↔ client）
-- [ ] 发送和接收消息（`send` / `recv`）
+- [x] 发送和接收消息（`send` / `recv`）
 - [ ] 循环处理多个客户端
 - [ ] 实现简单聊天室
 
