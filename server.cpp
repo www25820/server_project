@@ -3,10 +3,10 @@
 #include <windows.h>
 
 int main() {
-    // 双重保险：控制台输出 UTF-8 中文
-    system("chcp 65001 > nul");
-    SetConsoleOutputCP(CP_UTF8);
-    SetConsoleCP(CP_UTF8);
+    // 控制台 GBK 编码（中文 Windows 原生支持）
+    system("chcp 936 > nul");
+    SetConsoleOutputCP(936);
+    SetConsoleCP(936);
 
     // 1. 初始化 WinSock
     WSADATA wsa;
@@ -25,8 +25,12 @@ int main() {
         return 1;
     }
 
+    // 端口重用
+    int opt = 1;
+    setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, (char*)&opt, sizeof(opt));
+
     // 3. 绑定地址和端口
-    sockaddr_in addr;
+    sockaddr_in addr = {};
     addr.sin_family = AF_INET;
     addr.sin_port = htons(8080);
     addr.sin_addr.s_addr = inet_addr("127.0.0.1");
@@ -40,7 +44,7 @@ int main() {
     }
 
     // 4. 开始监听
-    if (listen(server_socket, 1) == SOCKET_ERROR) {
+    if (listen(server_socket, SOMAXCONN) == SOCKET_ERROR) {
         std::cerr << "监听失败！" << std::endl;
         closesocket(server_socket);
         WSACleanup();
@@ -62,7 +66,21 @@ int main() {
 
     std::cout << "有客户端连进来了！" << std::endl;
 
-    // 6. 清理
+    // ===== 收发数据的部分 =====
+    // 6a. 接收客户端发来的消息
+    char buf[1024] = {};
+    int len = recv(client_socket, buf, sizeof(buf) - 1, 0);
+    if (len > 0) {
+        buf[len] = '\0';
+        std::cout << "客户端说: " << buf << std::endl;
+    }
+
+    // 6b. 回复客户端
+    const char* reply = "收到";
+    send(client_socket, reply, strlen(reply), 0);
+    // ==========================
+
+    // 7. 清理
     closesocket(client_socket);
     closesocket(server_socket);
     WSACleanup();

@@ -1,12 +1,13 @@
 #include <iostream>
+#include <string>
 #include <winsock2.h>
 #include <windows.h>
 
 int main() {
-    // 双重保险：控制台输出 UTF-8 中文
-    system("chcp 65001 > nul");
-    SetConsoleOutputCP(CP_UTF8);
-    SetConsoleCP(CP_UTF8);
+    // 控制台 GBK 编码（中文 Windows 原生支持）
+    system("chcp 936 > nul");
+    SetConsoleOutputCP(936);
+    SetConsoleCP(936);
 
     // 1. 初始化 WinSock
     WSADATA wsa;
@@ -26,7 +27,7 @@ int main() {
     }
 
     // 3. 设置服务端地址
-    sockaddr_in server_addr;
+    sockaddr_in server_addr = {};
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(8080);
     server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
@@ -44,7 +45,22 @@ int main() {
 
     std::cout << "已连接到服务器！" << std::endl;
 
-    // 5. 清理
+    // ===== 收发数据的部分 =====
+    // 5a. 发消息给服务器
+    const char* msg = "你好";
+    send(client_socket, msg, strlen(msg), 0);
+    std::cout << "发送: " << msg << std::endl;
+
+    // 5b. 接收服务器回复
+    char buf[1024] = {};
+    int len = recv(client_socket, buf, sizeof(buf) - 1, 0);
+    if (len > 0) {
+        buf[len] = '\0';
+        std::cout << "服务器回复: " << buf << std::endl;
+    }
+    // ==========================
+
+    // 6. 清理
     closesocket(client_socket);
     WSACleanup();
 
