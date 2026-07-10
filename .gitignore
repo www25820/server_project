@@ -1,0 +1,14 @@
+# 编译产物
+*.exe
+*.o
+*.obj
+
+# 编译输出目录
+build/
+
+# VS Code 配置（含本机绝对路径，不适合共享）
+.vscode/
+
+# Windows 系统文件
+Thumbs.db
+Desktop.ini
