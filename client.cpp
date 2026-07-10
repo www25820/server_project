@@ -44,11 +44,17 @@ int main() {
     }
 
     std::cout << "已连接到服务器！" << std::endl;
-
+    while(true){
     // ===== 收发数据的部分 =====
     // 5a. 发消息给服务器
-    const char* msg = "你好";
-    send(client_socket, msg, strlen(msg), 0);
+    std::string msg;
+    getline(std::cin, msg);
+    if(msg == "/quit") {
+        std::cout << "客户端退出。" << std::endl;
+        break;
+    }
+    if (msg.empty()) continue;  // 不发空消息
+    send(client_socket, msg.c_str(), msg.length(), 0);
     std::cout << "发送: " << msg << std::endl;
 
     // 5b. 接收服务器回复
@@ -58,6 +64,7 @@ int main() {
         buf[len] = '\0';
         std::cout << "服务器回复: " << buf << std::endl;
     }
+}
     // ==========================
 
     // 6. 清理

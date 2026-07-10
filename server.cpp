@@ -3,6 +3,7 @@
 #include <windows.h>
 #include <thread>
 void handle_client(SOCKET client_socket) {
+    while(true) {
     // ===== 收发数据的部分 =====
     // 6a. 接收客户端发来的消息
     char buf[1024] = {};
@@ -11,15 +12,20 @@ void handle_client(SOCKET client_socket) {
         buf[len] = '\0';
         std::cout << "客户端说: " << buf << std::endl;
     }
+    else{
+        std::cout << "客户端已断开连接。" << std::endl;
+        break;
+    }
 
     // 6b. 回复客户端
     const char* reply = "收到";
     send(client_socket, reply, strlen(reply), 0);
     // ==========================
-    
+    }
+
     // 7. 关闭客户端 socket
     closesocket(client_socket);
-    }
+}
 int main() {
     // 控制台 GBK 编码（中文 Windows 原生支持）
     system("chcp 936 > nul");
@@ -84,8 +90,8 @@ int main() {
     }
 
     std::cout << "有客户端连进来了！" << std::endl;
-    std::thread clint_thread(handle_client, client_socket);
-    clint_thread.detach();
+    std::thread client_thread(handle_client, client_socket);
+    client_thread.detach();
 
     }
 }
