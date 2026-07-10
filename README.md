@@ -55,7 +55,7 @@ server_project/
 
 - [x] 基本的 TCP 连接（server ↔ client）
 - [x] 发送和接收消息（`send` / `recv`）
-- [ ] 循环处理多个客户端
+- [x] 循环处理多个客户端（`while` + `std::thread`）
 - [ ] 实现简单聊天室
 
 ## 作者
