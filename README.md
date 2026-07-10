@@ -4,9 +4,11 @@
 
 ## 功能
 
-- 服务器监听 `127.0.0.1:8080`，接受客户端连接
-- 客户端发送消息 → 服务器接收并回复
+- 服务器监听 `127.0.0.1:8080`，支持**多客户端同时在线**
+- 客户端持续发送消息 → 服务器接收并回复
+- `std::thread` 多线程并发，每个客户端独立线程处理
 - `SO_REUSEADDR` 端口重用，重启无需等待
+- 输入 `/quit` 退出客户端，空消息自动过滤
 
 ## 环境要求
 
@@ -45,10 +47,13 @@ g++ client.cpp -o client.exe -lws2_32 -Wall -Wextra -finput-charset=UTF-8 -fexec
 
 ```
 server_project/
-├── server.cpp    # 服务端代码
-├── client.cpp    # 客户端代码
-├── .gitignore    # Git 忽略规则
-└── README.md     # 项目说明
+├── server.cpp                # 服务端代码
+├── client.cpp                # 客户端代码
+├── study/                    # 学习注释版（逐行讲解）
+│   ├── server_annotated.cpp
+│   └── client_annotated.cpp
+├── .gitignore                # Git 忽略规则
+└── README.md                 # 项目说明
 ```
 
 ## 学习路线
@@ -56,7 +61,8 @@ server_project/
 - [x] 基本的 TCP 连接（server ↔ client）
 - [x] 发送和接收消息（`send` / `recv`）
 - [x] 循环处理多个客户端（`while` + `std::thread`）
-- [ ] 实现简单聊天室
+- [x] 持续聊天（循环收发 + `/quit` 退出 + 空消息过滤）
+- [ ] 实现简单聊天室（广播消息 + 共享列表 + mutex）
 
 ## 作者
 
