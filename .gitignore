@@ -6,7 +6,7 @@
 # 编译输出目录
 build/
 
-# VS Code 配置（含本机绝对路径，不适合共享）
+# VS Code 配置
 .vscode/
 
 # Windows 系统文件
