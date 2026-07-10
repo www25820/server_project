@@ -1,34 +1,41 @@
+/**
+ * 多线程聊天室 —— 客户端
+ * 双线程：主线程只管发送，接收线程只管收消息并打印
+ */
 #include <iostream>
 #include <string>
 #include <thread>
 #include <winsock2.h>
 #include <windows.h>
 
+// ===== 接收线程：后台一直等服务器消息，收到立刻打印 =====
 void recv_thread(SOCKET client_socket) {
     while (true) {
         char buf[1024] = {};
-        int len = recv(client_socket, buf, sizeof(buf) - 1, 0);
+        int len = recv(client_socket, buf, sizeof(buf) - 1, 0);  // 阻塞：没消息就一直等
         if (len <= 0) {
             std::cout << "\n[提示] 与服务器断开连接。" << std::endl;
             break;
         }
-        buf[len] = '\0';
+        buf[len] = '\0';  // 手动加字符串结束符
         std::cout << buf << std::endl;
     }
 }
 
+// ===== 主函数：连接 → 发用户名 → 开接收线程 → 循环发送 =====
 int main() {
+    // 控制台 GBK 编码
     system("chcp 936 > nul");
     SetConsoleOutputCP(936);
     SetConsoleCP(936);
 
-    // ① 先输入用户名
+    // 1. 输入昵称
     std::string username;
     std::cout << "请输入昵称: ";
-    std::getline(std::cin, username);
+    std::getline(std::cin, username);  // getline 支持空格，cin >> 不行
     if (username.empty()) username = "匿名";
 
-    // ② 初始化 WinSock
+    // 2. 初始化 WinSock
     WSADATA wsa;
     if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) {
         std::cerr << "WinSock 初始化失败！" << std::endl;
@@ -36,7 +43,7 @@ int main() {
         return 1;
     }
 
-    // ③ 创建 socket
+    // 3. 创建 TCP socket
     SOCKET client_socket = socket(AF_INET, SOCK_STREAM, 0);
     if (client_socket == INVALID_SOCKET) {
         std::cerr << "创建 socket 失败！" << std::endl;
@@ -45,7 +52,7 @@ int main() {
         return 1;
     }
 
-    // ④ 连接
+    // 4. 连接服务器 127.0.0.1:8080
     sockaddr_in server_addr = {};
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(8080);
@@ -61,30 +68,30 @@ int main() {
         return 1;
     }
 
-    // ⑤ 先发用户名
+    // 5. 先发用户名（服务端约定：第一条消息是昵称）
     send(client_socket, username.c_str(), username.size(), 0);
 
-    // ⑥ 启动接收线程
+    // 6. 启动接收线程（收发分离的关键）
     std::thread t(recv_thread, client_socket);
-    t.detach();
+    t.detach();  // 独立运行，不阻塞主线程
 
     std::cout << "========================================" << std::endl;
     std::cout << "  已进入聊天室！输入 /quit 退出" << std::endl;
     std::cout << "========================================" << std::endl;
 
-    // ⑦ 发送循环
+    // 7. 主循环：只负责读输入 → 发送
     while (true) {
         std::string msg;
         std::getline(std::cin, msg);
 
-        if (msg == "/quit") break;
-        if (msg.empty()) continue;
+        if (msg == "/quit") break;         // 退出命令
+        if (msg.empty()) continue;         // 空行跳过，不发（发了会导致双方卡死）
 
-        msg += "\n";
+        msg += "\n";                       // 加换行符作为消息分隔
         send(client_socket, msg.c_str(), msg.size(), 0);
     }
 
-    // ⑧ 清理
+    // 8. 清理
     closesocket(client_socket);
     WSACleanup();
     std::cout << "已退出聊天室。" << std::endl;
