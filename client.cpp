@@ -2,7 +2,21 @@
 #include <string>
 #include <winsock2.h>
 #include <windows.h>
-
+#include <thread>
+void recv_thread(SOCKET client_socket) {
+    while (true) {
+        char buf[1024] = {};
+        int len = recv(client_socket, buf, sizeof(buf) - 1, 0);
+        if (len > 0) {
+            buf[len] = '\0';
+            std::cout << "\n"<< buf << std::endl;
+        }
+        else {
+            std::cout << "服务器已断开连接。" << std::endl;
+            break;
+        }
+    }
+}
 int main() {
     // 控制台 GBK 编码（中文 Windows 原生支持）
     system("chcp 936 > nul");
@@ -44,9 +58,11 @@ int main() {
     }
 
     std::cout << "已连接到服务器！" << std::endl;
-    while(true){
     // ===== 收发数据的部分 =====
-    // 5a. 发消息给服务器
+    // 发消息给服务器
+    std::thread t(recv_thread, client_socket); // 启动接收线程
+    t.detach();  // 线程独立运行，main 退出时自动结束
+    while (true) {
     std::string msg;
     getline(std::cin, msg);
     if(msg == "/quit") {
@@ -57,13 +73,7 @@ int main() {
     send(client_socket, msg.c_str(), msg.length(), 0);
     std::cout << "发送: " << msg << std::endl;
 
-    // 5b. 接收服务器回复
-    char buf[1024] = {};
-    int len = recv(client_socket, buf, sizeof(buf) - 1, 0);
-    if (len > 0) {
-        buf[len] = '\0';
-        std::cout << "服务器回复: " << buf << std::endl;
-    }
+   
 }
     // ==========================
 

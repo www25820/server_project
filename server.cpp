@@ -2,10 +2,29 @@
 #include <winsock2.h>
 #include <windows.h>
 #include <thread>
+#include<vector>
+#include <mutex>
+#include <algorithm>
+std::vector<SOCKET> clients;
+std::mutex clients_mutex;
+void  broadcast(const std::string&msg,SOCKET sender=INVALID_SOCKET){//广播消息
+    std::lock_guard<std::mutex> lock(clients_mutex);// 锁定互斥量，确保线程安全
+    for(auto client:clients){
+        if(client != sender){// 不向发送者发送消息
+            send(client,msg.c_str(),msg.length(),0);
+        }
+    }
+}
 void handle_client(SOCKET client_socket) {
+    {
+        std::lock_guard<std::mutex> lock(clients_mutex);
+        clients.push_back(client_socket);
+    }// 将客户端 socket 添加到列表中
+
+    // 广播消息，通知其他客户端
+    broadcast("[系统]有人进入了聊天室\n",client_socket);
+
     while(true) {
-    // ===== 收发数据的部分 =====
-    // 6a. 接收客户端发来的消息
     char buf[1024] = {};
     int len = recv(client_socket, buf, sizeof(buf) - 1, 0);
     if (len > 0) {
@@ -16,15 +35,15 @@ void handle_client(SOCKET client_socket) {
         std::cout << "客户端已断开连接。" << std::endl;
         break;
     }
-
-    // 6b. 回复客户端
-    const char* reply = "收到";
-    send(client_socket, reply, strlen(reply), 0);
-    // ==========================
+    std::string msg(buf);
+    broadcast(msg+"\n", client_socket);//广播消息给其他客户端
     }
-
-    // 7. 关闭客户端 socket
+    {std::lock_guard<std::mutex> lock(clients_mutex);
+    clients.erase(std::remove(clients.begin(), clients.end(), client_socket), clients.end());}
+    broadcast("[系统]有人离开了聊天室\n",client_socket);
+    //  关闭客户端 socket
     closesocket(client_socket);
+    
 }
 int main() {
     // 控制台 GBK 编码（中文 Windows 原生支持）
