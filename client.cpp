@@ -1,24 +1,24 @@
 #include <iostream>
 #include <string>
+#include <thread>
 #include <winsock2.h>
 #include <windows.h>
-#include <thread>
+
 void recv_thread(SOCKET client_socket) {
     while (true) {
         char buf[1024] = {};
         int len = recv(client_socket, buf, sizeof(buf) - 1, 0);
         if (len > 0) {
             buf[len] = '\0';
-            std::cout << "\n"<< buf << std::endl;
-        }
-        else {
+            std::cout << "\n" << buf << std::endl;
+        } else {
             std::cout << "服务器已断开连接。" << std::endl;
             break;
         }
     }
 }
+
 int main() {
-    // 控制台 GBK 编码（中文 Windows 原生支持）
     system("chcp 936 > nul");
     SetConsoleOutputCP(936);
     SetConsoleCP(936);
@@ -40,7 +40,7 @@ int main() {
         return 1;
     }
 
-    // 3. 设置服务端地址
+    // 3. 设置服务器地址
     sockaddr_in server_addr = {};
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(8080);
@@ -48,7 +48,7 @@ int main() {
 
     std::cout << "正在连接服务器..." << std::endl;
 
-    // 4. 连接服务端
+    // 4. 连接
     if (connect(client_socket, (sockaddr*)&server_addr, sizeof(server_addr)) == SOCKET_ERROR) {
         std::cerr << "连接服务器失败！请确认服务器已启动（先运行 server.exe）。" << std::endl;
         closesocket(client_socket);
@@ -58,29 +58,29 @@ int main() {
     }
 
     std::cout << "已连接到服务器！" << std::endl;
-    // ===== 收发数据的部分 =====
-    // 发消息给服务器
-    std::thread t(recv_thread, client_socket); // 启动接收线程
-    t.detach();  // 线程独立运行，main 退出时自动结束
+
+    // 5. 启动接收线程
+    std::thread t(recv_thread, client_socket);
+    t.detach();
+
+    // 6. 发送循环
     while (true) {
-    std::string msg;
-    getline(std::cin, msg);
-    if(msg == "/quit") {
-        std::cout << "客户端退出。" << std::endl;
-        break;
+        std::string msg;
+        std::getline(std::cin, msg);
+
+        if (msg == "/quit") {
+            std::cout << "客户端退出。" << std::endl;
+            break;
+        }
+        if (msg.empty()) continue;
+
+        send(client_socket, msg.c_str(), msg.length(), 0);
+        std::cout << "发送: " << msg << std::endl;
     }
-    if (msg.empty()) continue;  // 不发空消息
-    send(client_socket, msg.c_str(), msg.length(), 0);
-    std::cout << "发送: " << msg << std::endl;
 
-   
-}
-    // ==========================
-
-    // 6. 清理
+    // 7. 清理
     closesocket(client_socket);
     WSACleanup();
-
     std::cout << "客户端关闭。" << std::endl;
     system("pause");
     return 0;
