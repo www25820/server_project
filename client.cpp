@@ -68,8 +68,9 @@ int main() {
         return 1;
     }
 
-    // 5. 先发用户名（服务端约定：第一条消息是昵称）
-    send(client_socket, username.c_str(), username.size(), 0);
+    // 5. 先发用户名（加 \n，服务端按行读取）
+    std::string name_line = username + "\n";
+    send(client_socket, name_line.c_str(), name_line.size(), 0);
 
     // 6. 启动接收线程（收发分离的关键）
     std::thread t(recv_thread, client_socket);

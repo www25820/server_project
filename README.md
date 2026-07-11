@@ -51,11 +51,8 @@ g++ client.cpp -o client.exe -lws2_32 -Wall -Wextra -finput-charset=UTF-8 -fexec
 
 ```
 server_project/
-├── server.cpp                # 服务端代码
-├── client.cpp                # 客户端代码
-├── study/                    # 学习注释版（逐行讲解）
-│   ├── server_annotated.cpp
-│   └── client_annotated.cpp
+├── server.cpp                # 服务端代码（多线程 + 按行读）
+├── client.cpp                # 客户端代码（双线程收发分离）
 ├── .gitignore                # Git 忽略规则
 └── README.md                 # 项目说明
 ```
@@ -67,6 +64,7 @@ server_project/
 - [x] 循环处理多个客户端（`while` + `std::thread`）
 - [x] 持续聊天（循环收发 + `/quit` 退出 + 空消息过滤）
 - [x] 实现简单聊天室（广播消息 + 共享列表 + mutex + 收发分离）
+- [x] TCP 粘包处理（`\n` 分隔 + `recv_line` 逐字节读取）
 
 ## 作者
 

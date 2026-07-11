@@ -15,6 +15,18 @@
 std::vector<SOCKET> clients;      // 所有在线客户端的 socket
 std::mutex clients_mutex;         // 保护 clients 的锁
 
+// ===== 逐字节读取一行（解决 TCP 粘包/拆包）=====
+std::string recv_line(SOCKET sock) {
+    std::string line;
+    char ch;
+    while (true) {
+        int n = recv(sock, &ch, 1, 0);  // 一次只读一个字节
+        if (n <= 0) return "";          // 断开或出错，返回空串
+        if (ch == '\n') return line;     // 遇到换行 = 一条完整消息
+        if (ch != '\r') line += ch;      // 跳过 \r（Windows 的换行是 \r\n）
+    }
+}
+
 // ===== 广播：把消息发给所有人（跳过发送者自己）=====
 void broadcast(const std::string& msg, SOCKET sender = INVALID_SOCKET) {
     std::lock_guard<std::mutex> lock(clients_mutex);  // RAII 锁：离开作用域自动解锁
@@ -27,14 +39,9 @@ void broadcast(const std::string& msg, SOCKET sender = INVALID_SOCKET) {
 
 // ===== 处理一个客户端（在独立线程中运行）=====
 void handle_client(SOCKET client_socket) {
-    // 1. 接收用户名（约定：客户端连接后第一条消息就是昵称）
-    char name_buf[64] = {};
-    int name_len = recv(client_socket, name_buf, sizeof(name_buf) - 1, 0);
-    std::string username = "匿名";
-    if (name_len > 0) {
-        name_buf[name_len] = '\0';
-        username = name_buf;
-    }
+    // 1. 接收用户名（客户端发来一行，以 \n 结尾）
+    std::string username = recv_line(client_socket);
+    if (username.empty()) username = "匿名";
 
     // 2. 加入在线列表 + 广播上线通知
     {
@@ -44,16 +51,14 @@ void handle_client(SOCKET client_socket) {
     std::cout << "[上线] " << username << std::endl;
     broadcast("[系统] " + username + " 进入了聊天室\n", client_socket);
 
-    // 3. 循环：收消息 → 广播 → 收消息 → 广播 → ...
+    // 3. 循环：逐行收消息 → 广播 → 收消息 → 广播 → ...
     while (true) {
-        char buf[1024] = {};
-        int len = recv(client_socket, buf, sizeof(buf) - 1, 0);
-        if (len <= 0) break;  // 客户端断开（recv 返回 0）或出错（返回 -1）
+        std::string line = recv_line(client_socket);  // 读到 \n 才返回
+        if (line.empty()) break;  // 客户端断开或出错
 
-        buf[len] = '\0';  // 手动加字符串结束符，不然 cout 会打印垃圾
-        std::string msg = username + ": " + buf;
+        std::string msg = username + ": " + line;
         std::cout << msg << std::endl;
-        broadcast(msg + "\n", client_socket);  // 带换行符广播
+        broadcast(msg + "\n", client_socket);
     }
 
     // 4. 离开列表 + 广播下线通知
